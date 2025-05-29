@@ -1,10 +1,9 @@
-name: Unzip uploaded ZIPs
+name: Unzip all ZIP files in repo
 
 on:
   push:
     paths:
-      - 'webllm.zip'
-      - 'tokenizer.zip'
+      - '*.zip'
 
 jobs:
   unzip:
@@ -13,18 +12,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v3
 
-      - name: Unzip tokenizer.zip
-        if: ${{ github.event.head_commit.added && contains(github.event.head_commit.added, 'tokenizer.zip') }}
-        run: unzip -o tokenizer.zip -d tokenizer
+      - name: Find and unzip all zip files
+        run: |
+          for file in *.zip; do
+            folder="${file%.zip}"
+            echo "Unzipping $file to $folder/"
+            unzip -o "$file" -d "$folder"
+            ls -la "$folder"
+          done
 
-      - name: Unzip webllm.zip
-        if: ${{ github.event.head_commit.added && contains(github.event.head_commit.added, 'webllm.zip') }}
-        run: unzip -o webllm.zip -d webllm
-
-      - name: Commit unzipped folders
+      - name: Commit unzipped folders if any changes
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
-          git add tokenizer webllm
-          git commit -m "Unzipped folders from zips"
+          # Add all folders that match zip names
+          for file in *.zip; do
+            folder="${file%.zip}"
+            if [ -d "$folder" ]; then
+              git add "$folder"
+            fi
+          done
+          # Commit only if there are staged changes
+          git diff --cached --quiet || git commit -m "Unzipped folders from zip files"
           git push
