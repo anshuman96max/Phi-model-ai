@@ -2,6 +2,8 @@ name: Unzip uploaded ZIPs
 
 on:
   push:
+    branches:
+      - main       # <-- set your default branch here
     paths:
       - '*.zip'
 
